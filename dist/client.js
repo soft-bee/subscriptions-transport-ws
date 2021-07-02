@@ -458,7 +458,7 @@ var SubscriptionClient = (function () {
                         _c.label = 3;
                     case 3:
                         url = _a;
-                        this.client = new ((_b = this.wsImpl).bind.apply(_b, __spreadArrays([void 0, this.url, this.wsProtocols], this.wsOptionArguments)))();
+                        this.client = new ((_b = this.wsImpl).bind.apply(_b, __spreadArrays([void 0, url, this.wsProtocols], this.wsOptionArguments)))();
                         this.checkMaxConnectTimeout();
                         this.client.onopen = function () { return __awaiter(_this, void 0, void 0, function () {
                             var connectionParams, error_1;

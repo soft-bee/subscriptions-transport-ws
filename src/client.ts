@@ -555,7 +555,7 @@ export class SubscriptionClient {
 
   private async connect() {
     const url = typeof this.url === 'function' ? await this.url() : this.url;
-    this.client = new this.wsImpl(this.url, this.wsProtocols, ...this.wsOptionArguments);
+    this.client = new this.wsImpl(url, this.wsProtocols, ...this.wsOptionArguments);
 
     this.checkMaxConnectTimeout();
 
