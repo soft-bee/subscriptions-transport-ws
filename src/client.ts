@@ -73,7 +73,7 @@ export interface ClientOptions {
 export class SubscriptionClient {
   public client: any;
   public operations: Operations;
-  private url: string;
+  private url: string | (() => Promise<string>);
   private nextOperationId: number;
   private connectionParams: Function;
   private minWsTimeout: number;
@@ -100,7 +100,7 @@ export class SubscriptionClient {
   private wsOptionArguments: any[];
 
   constructor(
-    url: string,
+    url: string | (() => Promise<string>),
     options?: ClientOptions,
     webSocketImpl?: any,
     webSocketProtocols?: string | string[],
@@ -205,16 +205,16 @@ export class SubscriptionClient {
         const observer = getObserver(observerOrNext, onError, onComplete);
 
         opId = executeOperation(request, (error: Error[], result: any) => {
-          if ( error === null && result === null ) {
-            if ( observer.complete ) {
+          if (error === null && result === null) {
+            if (observer.complete) {
               observer.complete();
             }
           } else if (error) {
-            if ( observer.error ) {
+            if (observer.error) {
               observer.error(error[0]);
             }
           } else {
-            if ( observer.next ) {
+            if (observer.next) {
               observer.next(result);
             }
           }
@@ -222,7 +222,7 @@ export class SubscriptionClient {
 
         return {
           unsubscribe: () => {
-            if ( opId ) {
+            if (opId) {
               unsubscribe(opId);
               opId = null;
             }
@@ -265,7 +265,7 @@ export class SubscriptionClient {
   }
 
   public unsubscribeAll() {
-    Object.keys(this.operations).forEach( subId => {
+    Object.keys(this.operations).forEach(subId => {
       this.unsubscribe(subId);
     });
   }
@@ -349,7 +349,7 @@ export class SubscriptionClient {
     error?: (e: Error) => void,
     complete?: () => void,
   ) {
-    if ( typeof observerOrNext === 'function' ) {
+    if (typeof observerOrNext === 'function') {
       return {
         next: (v: T) => observerOrNext(v),
         error: (e: Error) => error && error(e),
@@ -383,7 +383,7 @@ export class SubscriptionClient {
       clearTimeout(this.maxConnectTimeoutId);
       this.maxConnectTimeoutId = null;
     }
-    }
+  }
 
   private clearTryReconnectTimeout() {
     if (this.tryReconnectTimeoutId) {
@@ -421,9 +421,9 @@ export class SubscriptionClient {
     }
 
     if (
-      ( !isString(query) && !getOperationAST(query, operationName)) ||
-      ( operationName && !isString(operationName)) ||
-      ( variables && !isObject(variables))
+      (!isString(query) && !getOperationAST(query, operationName)) ||
+      (operationName && !isString(operationName)) ||
+      (variables && !isObject(variables))
     ) {
       throw new Error('Incorrect option types. query must be a string or a document,' +
         '`operationName` must be a string, and `variables` must be an object.');
@@ -553,7 +553,8 @@ export class SubscriptionClient {
     }, this.maxConnectTimeGenerator.duration());
   }
 
-  private connect() {
+  private async connect() {
+    const url = typeof this.url === 'function' ? await this.url() : this.url;
     this.client = new this.wsImpl(this.url, this.wsProtocols, ...this.wsOptionArguments);
 
     this.checkMaxConnectTimeout();
@@ -589,7 +590,7 @@ export class SubscriptionClient {
       this.eventEmitter.emit('error', err);
     };
 
-    this.client.onmessage = ({ data }: {data: any}) => {
+    this.client.onmessage = ({ data }: { data: any }) => {
       this.processReceivedData(data);
     };
   }
@@ -606,9 +607,9 @@ export class SubscriptionClient {
     }
 
     if (
-      [ MessageTypes.GQL_DATA,
-        MessageTypes.GQL_COMPLETE,
-        MessageTypes.GQL_ERROR,
+      [MessageTypes.GQL_DATA,
+      MessageTypes.GQL_COMPLETE,
+      MessageTypes.GQL_ERROR,
       ].indexOf(parsedMessage.type) !== -1 && !this.operations[opId]
     ) {
       this.unsubscribe(opId);
@@ -647,7 +648,7 @@ export class SubscriptionClient {
 
       case MessageTypes.GQL_DATA:
         const parsedPayload = !parsedMessage.payload.errors ?
-          parsedMessage.payload : {...parsedMessage.payload, errors: this.formatErrors(parsedMessage.payload.errors)};
+          parsedMessage.payload : { ...parsedMessage.payload, errors: this.formatErrors(parsedMessage.payload.errors) };
         this.operations[opId].handler(null, parsedPayload);
         break;
 
