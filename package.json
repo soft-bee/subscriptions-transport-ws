@@ -6,7 +6,7 @@
   "browser": "dist/client.js",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/apollostack/subscriptions-transport-ws.git"
+    "url": "git+https://github.com/soft-bee/subscriptions-transport-ws.git"
   },
   "dependencies": {
     "backo2": "^1.0.2",
